@@ -9,7 +9,7 @@ try:
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": "Привіт, як справи?"}]
     )
+    print(response.choices[0].message.content)
 except Exception:
     print("помилка")
 
-print(response.choices[0].message.content)

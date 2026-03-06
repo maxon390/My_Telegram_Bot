@@ -16,8 +16,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text #отримуємо текст повідомлення
+    message = await update.message.reply_text("Бот думає..")
     gpt_answer = await gpt_service.add_message(user_message)
-    await update.message.reply_text(gpt_answer)
+    await message.edit_text(gpt_answer)
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()

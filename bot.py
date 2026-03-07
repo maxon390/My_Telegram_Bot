@@ -20,10 +20,16 @@ async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
     gpt_answer = await gpt_service.add_message(user_message)
     await message.edit_text(gpt_answer)
 
+async def random(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = await update.message.reply_text("Бот шукає цікавий факт")
+    gpt_answer = await gpt_service.add_message("Напиши цікавий, рандомний факт. Українською")
+    await message.edit_text(gpt_answer)
+
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("random", random))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     print("Бот запущен...")
     app.run_polling()

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 from gpt import ChatGptService
+from util import show_main_menu, send_image, load_message, send_text_buttons
 
 load_dotenv()  # Тягне ваш ключ із .env
 
@@ -12,18 +13,29 @@ OPENAI_TOKEN = os.getenv("OPENAI_API_KEY") #завантажуємо токен 
 gpt_service = ChatGptService(OPENAI_TOKEN) #створюємо обєкт chat GPT
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привіт")
+    await send_image(update, context, 'main')
+    await update.message.reply_text(load_message('main'))
+    await show_main_menu(update, context,{
+        "/start": "Головне меню",
+        "/random": "Цікавий рандомний факт"
+    })
 
 async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text #отримуємо текст повідомлення
     message = await update.message.reply_text("Бот думає..")
+    #await gpt_service.clear()
     gpt_answer = await gpt_service.add_message(user_message)
     await message.edit_text(gpt_answer)
 
 async def random(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = await update.message.reply_text("Бот шукає цікавий факт")
+    await update.message.reply_text("Бот шукає цікавий факт")
+    #await gpt_service.clear()
     gpt_answer = await gpt_service.add_message("Напиши цікавий, рандомний факт. Українською")
-    await message.edit_text(gpt_answer)
+    await send_text_buttons(update, context, gpt_answer, {
+        '/random' : "Ще цікавий факт",
+        '/start' : 'Завершити'})
+
+
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()

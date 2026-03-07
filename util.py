@@ -52,7 +52,7 @@ async def send_text_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE,
 # надсилає в чат фото
 async def send_image(update: Update, context: ContextTypes.DEFAULT_TYPE,
                      name: str) -> Message:
-    with open(f'resources/images/{name}.jpg', 'rb') as image:
+    with open(f'images/{name}.jpg', 'rb') as image:
         return await context.bot.send_photo(chat_id=update.effective_chat.id,
                                             photo=image)
 
@@ -77,7 +77,7 @@ async def hide_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # завантажує повідомлення з папки /resources/messages/
 def load_message(name):
-    with open("resources/messages/" + name + ".txt", "r",
+    with open("messages/" + name + ".txt", "r",
               encoding="utf8") as file:
         return file.read()
 

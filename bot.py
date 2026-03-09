@@ -1,9 +1,10 @@
 import os
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, CallbackQueryHandler
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, \
+    CallbackQueryHandler, ConversationHandler
 from gpt import ChatGptService
-from util import show_main_menu, send_image, load_message, send_text_buttons, load_prompt
+from util import show_main_menu,send_text, send_image, load_message, send_text_buttons, load_prompt
 
 load_dotenv()  # Тягне ваш ключ із .env
 
@@ -15,11 +16,13 @@ gpt_service = ChatGptService(OPENAI_TOKEN) #створюємо обєкт chat G
 #Стартове меню при запуску бота або при команді /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_image(update, context, 'main')
-    await update.message.reply_text(load_message('main'))
+    await send_text(update, context, load_message('main'))
+    #Додавання випадючого меню зліва
     await show_main_menu(update, context,{
         "/start": "Головне меню",
         "/random": "Цікавий рандомний факт"
     })
+
 
 async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text #отримуємо текст повідомлення
@@ -28,24 +31,32 @@ async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
     gpt_answer = await gpt_service.add_message(user_message)
     await message.edit_text(gpt_answer)
 
+
 async def random(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await send_image(update, context, 'gpt')
+    await send_image(update, context, 'random')
     prompt = load_prompt('random')
     gpt_answer = await gpt_service.send_question(prompt, "Напиши цікавий, рандомний факт. Українською")
     await send_text_buttons(update, context, gpt_answer, {
         'random' : "Ще цікавий факт",
         'start' : 'Завершити'})
 
+
 # Функція обробки кнопок під повідомленням з рандомним фактом
 async  def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     if query.data == 'random':
         await random(update, context)
-
     elif query.data == 'start':
         await start(update, context)
+
+"""conteiner = ConversationHandler(
+    entry_points=[CommandHandler("mode", mode_start)], # Початок
+    states={
+        MODE_CHOOSE: [MessageHandler(filters.TEXT, mode_set)] # Що робити в стані очікування
+    },
+    fallbacks=[CommandHandler("cancel", start)] # Як вийти, якщо передумав
+)"""
 
 
 

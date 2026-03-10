@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
     quiz_handler = ConversationHandler(
         entry_points=[CommandHandler("quiz", quiz),
-                      CallbackQueryHandler(quiz, pattern='^quiz$')
+                      CallbackQueryHandler(quiz, pattern='quiz')
                       ],
         states={
             QUIZ: [CallbackQueryHandler(quiz_button_handler)]

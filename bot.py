@@ -63,11 +63,14 @@ async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
 
         await send_text_buttons(update, context, "Граємо далі?", {
             'more_quiz': "Ще питання",
+            'quiz': "Змінити тему",
             'start': "Завершити квіз"
         })
 
 async def random(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await send_image(update, context, 'random')
+    if context.user_data.get('mode') != 'random':
+        context.user_data['mode'] = 'random'
+        await send_image(update, context, 'random')
     prompt = load_prompt('random')
     gpt_answer = await gpt_service.send_question(prompt, "Напиши цікавий, рандомний факт. Українською")
     await send_text_buttons(update, context, gpt_answer, {
@@ -85,6 +88,7 @@ async  def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start(update, context)
     elif query.data == 'more_quiz':
         await quiz_button_handler(update, context)
+
 
 async def talk(update:Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['mode'] = 'talk'
@@ -132,6 +136,13 @@ async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE)
         await start(update, context)  # Викликаємо головне меню
         return ConversationHandler.END
 
+    if query.data == 'quiz_change':
+        await quiz(update, context)
+        return QUIZ
+
+    if query.data == 'quiz_change':
+        return await quiz(update, context)
+
     if query.data == 'more_quiz':
         question = await gpt_service.add_message("Напиши ще одне питання")
     else:
@@ -157,7 +168,9 @@ if __name__ == '__main__':
     )
 
     quiz_handler = ConversationHandler(
-        entry_points=[CommandHandler("quiz", quiz)],
+        entry_points=[CommandHandler("quiz", quiz),
+                      CallbackQueryHandler(quiz, pattern='^quiz$')
+                      ],
         states={
             QUIZ: [CallbackQueryHandler(quiz_button_handler)]
         },

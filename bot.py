@@ -18,7 +18,6 @@ gpt_service = ChatGptService(OPENAI_TOKEN) #створюємо обєкт chat G
 
 #Стартове меню при запуску бота або при команді /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     await send_text(update, context, load_message('main'))
     #Додавання випадючого меню зліва
     await show_main_menu(update, context,{
@@ -26,6 +25,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/random": "Цікавий рандомний факт",
         "/gpt" : "Запитання чату GPT"
     })
+
 
 async def gpt(update:Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['mode'] = 'gpt'
@@ -67,15 +67,17 @@ async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
             'start': "Завершити квіз"
         })
 
+# Функція виводу рандом факту який генерує чат ГПТ
 async def random(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data.get('mode') != 'random':
-        context.user_data['mode'] = 'random'
-        await send_image(update, context, 'random')
+    if context.user_data.get('mode') != 'random': #Якщо режим  не рандом
+        context.user_data['mode'] = 'random' # тоді перевести в режим рандом
+        await send_image(update, context, 'random') #також завантажити картинку розділу якщо до цього був інший режим
     prompt = load_prompt('random')
     gpt_answer = await gpt_service.send_question(prompt, "Напиши цікавий, рандомний факт. Українською")
+    #Виводить текст факту та додає кнопки Ще цікавий факт та Завершити
     await send_text_buttons(update, context, gpt_answer, {
-        'random' : "Ще цікавий факт",
-        'start' : 'Завершити'})
+        'random' : "Ще цікавий факт", #При натисканні спрацьовує обробник app.add_handler(CommandHandler("random", random))
+        'start' : 'Завершити'}) #При натисканні спрацьовує обробник app.add_handler(CommandHandler("start", start))
 
 
 # Функція обробки кнопок під повідомленням з random фактом
@@ -91,8 +93,8 @@ async  def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def talk(update:Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['mode'] = 'talk'
-    await send_image(update, context, 'date')
+    context.user_data['mode'] = 'talk' #переводимо mode в talk
+    await send_image(update, context, 'date') #надсилає зображення режиму в чат
     buttons = {
         'date_grande': "Аріана Гранде",
         'date_robbie': "Марго Роббі",
@@ -100,11 +102,13 @@ async def talk(update:Update, context: ContextTypes.DEFAULT_TYPE):
         'date_gosling': "Райан Гослінг",
         'date_hardy': "Том Харді",
     }
-    await send_text_buttons(update, context, load_message('date'), buttons)
-    return TALK
+    await send_text_buttons(update, context, load_message('date'), buttons) # надсилає в чат опис режиму та кнопки
+    return TALK #Повертаємо state в talk_handler = ConversationHandler
 
+#  Функція обробки кнопок вибору знаменитості
 async def talk_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    print( query)
     await query.answer()
     gpt_service.set_prompt(load_prompt(query.data))
     await query.edit_message_text(f"Ви обрали особистість. Тепер я спілкуюся як {query.data[5:].capitalize()}!")
@@ -159,9 +163,9 @@ async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE)
 
 if __name__ == '__main__':
     talk_handler = ConversationHandler(
-        entry_points=[CommandHandler("talk", talk)],
+        entry_points=[CommandHandler("talk", talk)], #викликає функцію talk
         states={
-            TALK: [CallbackQueryHandler(talk_button_handler)]
+            TALK: [CallbackQueryHandler(talk_button_handler)] #викликає функцію обробки кнопок talk_button_handler
         },
         fallbacks=[CommandHandler("start", start)],
 
@@ -184,8 +188,9 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("start", start))
     # Обробник команди /random
     app.add_handler(CommandHandler("random", random))
-
+    # Обробник команди /talk викликає ConversationHandler
     app.add_handler(talk_handler)
+
     app.add_handler(quiz_handler)
 
     # Обробник кнопок під повідомленням random факту

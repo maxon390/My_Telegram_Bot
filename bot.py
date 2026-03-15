@@ -8,6 +8,7 @@ from util import show_main_menu,send_text, send_image, load_message, send_text_b
 
 TALK = 1
 QUIZ = 2
+TRANSLATE = 3
 
 load_dotenv()  # Тягне ваш ключ із .env
 
@@ -23,7 +24,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_main_menu(update, context,{
         "/start": "Головне меню",
         "/random": "Цікавий рандомний факт",
-        "/gpt" : "Запитання чату GPT"
+        "/gpt" : "Запитання чату GPT",
+        "/translate" : "Перекладач"
     })
 
 
@@ -158,7 +160,9 @@ async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE)
     await query.edit_message_text(question)
     return ConversationHandler.END
 
-
+async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['mode'] = 'translate'
+    await update.message.reply_text("привіт")
 
 
 
@@ -182,6 +186,13 @@ if __name__ == '__main__':
         fallbacks=[]
     )
 
+    translate_handler = ConversationHandler(
+            entry_points=[CommandHandler("translate", translate)],
+        states={
+            #TRANSLATE: [CallbackQueryHandler(translate_handler)],
+        },
+        fallbacks=[CommandHandler("start", start)],
+    )
 
 
     app = ApplicationBuilder().token(TOKEN).build()
@@ -194,6 +205,8 @@ if __name__ == '__main__':
 
     # Обробник команди /quiz викликає quiz_handler = ConversationHandler
     app.add_handler(quiz_handler)
+
+    app.add_handler(translate_handler)
 
     # Обробник кнопок під повідомленням random факту
     app.add_handler(CallbackQueryHandler(callback_handler))

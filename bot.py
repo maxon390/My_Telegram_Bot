@@ -118,16 +118,16 @@ async def talk_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     return ConversationHandler.END
 
 async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['mode'] = 'quiz' #
+    context.user_data['mode'] = 'quiz' # переводимо мод в режим quiz
     context.user_data['score'] = 0  # Початковий рахунок
-    await send_image(update, context, 'quiz')
+    await send_image(update, context, 'quiz') #надсилаємо картинку розділу в чат
     buttons = {
         'quiz_prog': "Програмування",
         'quiz_math': "Математика",
         'quiz_biology': "Біологія"
     }
-    await send_text_buttons(update, context, load_message('quiz'), buttons)
-    return QUIZ
+    await send_text_buttons(update, context, load_message('quiz'), buttons) #надсилаємо в чат текст розділу та кнопки з темами квізу
+    return QUIZ #Повертаємо state в quiz_handler = ConversationHandler
 
 async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE):
     quiz_prompts = {
@@ -145,8 +145,8 @@ async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE)
         await quiz(update, context)
         return QUIZ
 
-    if query.data == 'quiz_change':
-        return await quiz(update, context)
+    """if query.data == 'quiz_change':
+        return await quiz(update, context)"""
 
     if query.data == 'more_quiz':
         question = await gpt_service.add_message("Напиши ще одне питання")
@@ -177,7 +177,7 @@ if __name__ == '__main__':
                       CallbackQueryHandler(quiz, pattern='quiz') #Запускає функцію quiz по по натисканню кнопки з query = quiz
                       ],
         states={
-            QUIZ: [CallbackQueryHandler(quiz_button_handler)]
+            QUIZ: [CallbackQueryHandler(quiz_button_handler)]#Запускає функцію обробки кнопок вибору теми квізу
         },
         fallbacks=[]
     )

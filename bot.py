@@ -68,6 +68,12 @@ async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
             'quiz': "Змінити тему",
             'start': "Завершити квіз"
         })
+    elif context.user_data.get('mode') == 'translate':
+        user_answer = update.message.text
+        message = await update.message.reply_text('Перекладаю...')
+        text = await gpt_service.add_message(user_answer)
+        await message.edit_text(text)
+
 
 # Функція виводу рандом факту який генерує чат ГПТ
 async def random(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -162,9 +168,20 @@ async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['mode'] = 'translate'
-    await update.message.reply_text("привіт")
+    translate_button = {
+        'england' : 'Англійська',
+        'france' : 'Французька',
+        'italian' : 'Італійська'
+    }
+    await send_text_buttons(update, context, 'Виберіть мову на яку потрібно перекласти текст:', translate_button)
+    return TRANSLATE
 
-
+async def translate_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await send_text(update, context, f"Напишіть текст який потрібно перекласти")
+    gpt_service.set_prompt('Переклади текст на Англійську, без будь яких пояснень просто переклад, якщо ти не можеш перекласти напиши "Я не можу це перекласти."')
+    return ConversationHandler.END
 
 if __name__ == '__main__':
     talk_handler = ConversationHandler(
@@ -189,7 +206,7 @@ if __name__ == '__main__':
     translate_handler = ConversationHandler(
             entry_points=[CommandHandler("translate", translate)],
         states={
-            #TRANSLATE: [CallbackQueryHandler(translate_handler)],
+            TRANSLATE: [CallbackQueryHandler(translate_button_handler)],
         },
         fallbacks=[CommandHandler("start", start)],
     )

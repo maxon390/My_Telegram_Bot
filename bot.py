@@ -70,6 +70,12 @@ async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
         message = await update.message.reply_text('Перекладаю...')
         text = await gpt_service.add_message(user_answer)
         await message.edit_text(text)
+        await send_text_buttons(update, context,
+        'Напишіть що ще хочете перекласти, або оберіть іншу мову',
+        {
+            'change_language' : 'Змінити мову',
+            'start' : 'Головне меню'
+        })
 
 
 # Функція виводу рандом факту який генерує чат ГПТ
@@ -95,6 +101,8 @@ async  def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start(update, context)
     elif query.data == 'more_quiz': #якщо прийшло more_quiz то запускаємо функцію quiz_button_handler
         await quiz_button_handler(update, context)
+    elif query.data == 'change_language':
+        await translate(update, context)
 
 
 async def talk(update:Update, context: ContextTypes.DEFAULT_TYPE):
@@ -192,7 +200,8 @@ if __name__ == '__main__':
     )
 
     translate_handler = ConversationHandler(
-            entry_points=[CommandHandler("translate", translate)],
+            entry_points=[CommandHandler("translate", translate),
+                        CallbackQueryHandler(translate_button_handler, pattern='language')],
         states={
             TRANSLATE: [CallbackQueryHandler(translate_button_handler)],
         },

@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
     CallbackQueryHandler, ConversationHandler
 from gpt import ChatGptService
 from util import show_main_menu,send_text, send_image, load_message, send_text_buttons, load_prompt
-from data import translate_button, buttons
+from data import translate_button, date_buttons, quiz_prompts, quiz_buttons
 
 TALK = 1
 QUIZ = 2
@@ -109,7 +109,7 @@ async def talk(update:Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['mode'] = 'talk' #переводимо mode в talk
     await send_image(update, context, 'date') #надсилає зображення режиму в чат
 
-    await send_text_buttons(update, context, load_message('date'), buttons) # надсилає в чат опис режиму та кнопки
+    await send_text_buttons(update, context, load_message('date'), date_buttons) # надсилає в чат опис режиму та кнопки
     return TALK #Повертаємо state в talk_handler = ConversationHandler
 
 #  Функція обробки кнопок вибору знаменитості
@@ -128,20 +128,12 @@ async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['mode'] = 'quiz' # переводимо мод в режим quiz
     context.user_data['score'] = 0  # Початковий рахунок
     await send_image(update, context, 'quiz') #надсилаємо картинку розділу в чат
-    buttons = {
-        'quiz_prog': "Програмування",
-        'quiz_math': "Математика",
-        'quiz_biology': "Біологія"
-    }
-    await send_text_buttons(update, context, load_message('quiz'), buttons) #надсилаємо в чат текст розділу та кнопки з темами квізу
+
+    await send_text_buttons(update, context, load_message('quiz'), quiz_buttons) #надсилаємо в чат текст розділу та кнопки з темами квізу
     return QUIZ #Повертаємо state в quiz_handler = ConversationHandler
 
 async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE):
-    quiz_prompts = {
-        'quiz_prog': "Ти вчитель програмування. Постав одне цікаве коротке питання про Python. Не пиши варіантів відповіді.",
-        'quiz_math': "Ти вчитель математики. Постав одну цікаву коротку логічну задачу. Не пиши відповідь.",
-        'quiz_biology': "Ти вчитель біології. Постав одне цікаве коротке питання про тварин чи рослини. Не пиши відповідь."
-    }
+
     query = update.callback_query
     await query.answer()
     if query.data == 'start':
@@ -151,9 +143,6 @@ async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE)
     if query.data == 'quiz_change':
         await quiz(update, context)
         return QUIZ
-
-    """if query.data == 'quiz_change':
-        return await quiz(update, context)"""
 
     if query.data == 'more_quiz':
         question = await gpt_service.add_message("Напиши ще одне питання")
@@ -176,8 +165,8 @@ async def translate_button_handler(update: Update, context: ContextTypes.DEFAULT
     query = update.callback_query
     await query.answer()
     await send_text(update, context, f"Напишіть текст який потрібно перекласти")
-    gpt_service.set_prompt(f'Переклади текст на {translate_button[query.data][:-1]+'у'}, без будь яких пояснень просто переклад, якщо ти не можеш перекласти - напиши українською"Я не можу це перекласти."')
-    print(translate_button[query.data][:-1]+'у')
+    gpt_service.set_prompt(f'Переклади текст на {translate_button[query.data][:-1]+'у'}, без будь яких пояснень просто переклад, якщо ти не можеш перекласти - напиши українською "Я не можу це перекласти."')
+    #print(translate_button[query.data][:-1]+'у')
     return ConversationHandler.END
 
 if __name__ == '__main__':
@@ -187,7 +176,6 @@ if __name__ == '__main__':
             TALK: [CallbackQueryHandler(talk_button_handler)] #викликає функцію обробки кнопок talk_button_handler
         },
         fallbacks=[CommandHandler("start", start)],
-
     )
 
     quiz_handler = ConversationHandler(
@@ -202,7 +190,6 @@ if __name__ == '__main__':
 
     translate_handler = ConversationHandler(
             entry_points=[CommandHandler("translate", translate),
-                        #CallbackQueryHandler(translate_button_handler, pattern='language')
                         CallbackQueryHandler(translate, pattern='change_language')
                           ],
         states={

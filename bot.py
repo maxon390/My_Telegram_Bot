@@ -5,6 +5,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
     CallbackQueryHandler, ConversationHandler
 from gpt import ChatGptService
 from util import show_main_menu,send_text, send_image, load_message, send_text_buttons, load_prompt
+from data import translate_button, buttons
 
 TALK = 1
 QUIZ = 2
@@ -51,18 +52,14 @@ async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
     elif context.user_data.get('mode') == 'quiz': # цей блок виконується якщо режим quiz
         user_answer = update.message.text
         message = await update.message.reply_text("Перевіряю...")
-
         check_query = f"Користувач відповів: '{user_answer}'. Якщо правильно - почни з 'Правильно!', якщо ні - 'Неправильно'. Додай пояснення."
         gpt_answer = await gpt_service.add_message(check_query)
 
         if "Правильно" in gpt_answer:
             context.user_data['score'] = context.user_data.get('score', 0) + 1
-
         current_score = context.user_data.get('score', 0)
         final_text = f"{gpt_answer}\n\n🏆 Ваш рахунок: {current_score}"
-
         await message.edit_text(final_text)
-
         await send_text_buttons(update, context, "Граємо далі?", {
             'more_quiz': "Ще питання",
             'quiz': "Змінити тему",
@@ -103,13 +100,7 @@ async  def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def talk(update:Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['mode'] = 'talk' #переводимо mode в talk
     await send_image(update, context, 'date') #надсилає зображення режиму в чат
-    buttons = {
-        'date_grande': "Аріана Гранде",
-        'date_robbie': "Марго Роббі",
-        'date_zendaya': "Зендея",
-        'date_gosling': "Райан Гослінг",
-        'date_hardy': "Том Харді",
-    }
+
     await send_text_buttons(update, context, load_message('date'), buttons) # надсилає в чат опис режиму та кнопки
     return TALK #Повертаємо state в talk_handler = ConversationHandler
 
@@ -168,11 +159,7 @@ async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['mode'] = 'translate'
-    translate_button = {
-        'england' : 'Англійська',
-        'france' : 'Французька',
-        'italian' : 'Італійська'
-    }
+
     await send_text_buttons(update, context, 'Виберіть мову на яку потрібно перекласти текст:', translate_button)
     return TRANSLATE
 
@@ -180,7 +167,8 @@ async def translate_button_handler(update: Update, context: ContextTypes.DEFAULT
     query = update.callback_query
     await query.answer()
     await send_text(update, context, f"Напишіть текст який потрібно перекласти")
-    gpt_service.set_prompt('Переклади текст на Англійську, без будь яких пояснень просто переклад, якщо ти не можеш перекласти напиши "Я не можу це перекласти."')
+    gpt_service.set_prompt(f'Переклади текст на {translate_button[query.data][:-1]+'у'}, без будь яких пояснень просто переклад, якщо ти не можеш перекласти - напиши українською"Я не можу це перекласти."')
+    print(translate_button[query.data][:-1]+'у')
     return ConversationHandler.END
 
 if __name__ == '__main__':

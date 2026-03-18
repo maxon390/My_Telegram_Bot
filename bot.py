@@ -101,8 +101,8 @@ async  def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start(update, context)
     elif query.data == 'more_quiz': #якщо прийшло more_quiz то запускаємо функцію quiz_button_handler
         await quiz_button_handler(update, context)
-    elif query.data == 'change_language':
-        await translate(update, context)
+    #elif query.data == 'change_language':
+       # await translate(update, context)
 
 
 async def talk(update:Update, context: ContextTypes.DEFAULT_TYPE):
@@ -167,7 +167,8 @@ async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['mode'] = 'translate'
-
+    if update.callback_query is not None:
+        await update.callback_query.answer()
     await send_text_buttons(update, context, 'Виберіть мову на яку потрібно перекласти текст:', translate_button)
     return TRANSLATE
 
@@ -201,7 +202,9 @@ if __name__ == '__main__':
 
     translate_handler = ConversationHandler(
             entry_points=[CommandHandler("translate", translate),
-                        CallbackQueryHandler(translate_button_handler, pattern='language')],
+                        #CallbackQueryHandler(translate_button_handler, pattern='language')
+                        CallbackQueryHandler(translate, pattern='change_language')
+                          ],
         states={
             TRANSLATE: [CallbackQueryHandler(translate_button_handler)],
         },

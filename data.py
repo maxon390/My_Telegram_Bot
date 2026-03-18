@@ -1,7 +1,7 @@
 translate_button = {
-    'england': 'Англійська',
-    'france': 'Французька',
-    'italian': 'Італійська'
+    'language_england': 'Англійська',
+    'language_france': 'Французька',
+    'language_italian': 'Італійська'
 }
 
 buttons = {

@@ -10,6 +10,7 @@ from data import translate_button, date_buttons, quiz_prompts, quiz_buttons
 TALK = 1
 QUIZ = 2
 TRANSLATE = 3
+GIFT = 4
 
 load_dotenv()  # Тягне ваш ключ із .env
 
@@ -26,7 +27,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start": "Головне меню",
         "/random": "Цікавий рандомний факт",
         "/gpt" : "Запитання чату GPT",
-        "/translate" : "Перекладач"
+        "/translate" : "Перекладач",
+        "/gift" : "Допомога в підборі подарунку"
     })
 
 
@@ -169,6 +171,12 @@ async def translate_button_handler(update: Update, context: ContextTypes.DEFAULT
     #print(translate_button[query.data][:-1]+'у')
     return ConversationHandler.END
 
+async def gift(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pass
+
+async def gift_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pass
+
 if __name__ == '__main__':
     talk_handler = ConversationHandler(
         entry_points=[CommandHandler("talk", talk)], #викликає функцію talk
@@ -198,6 +206,14 @@ if __name__ == '__main__':
         fallbacks=[CommandHandler("start", start)],
     )
 
+    gift_handler = ConversationHandler(
+        entry_points=[CommandHandler(gift, 'gift')],
+        states={
+            GIFT : [MessageHandler(filters.TEXT & ~filters.COMMAND, gift_handler)]
+        },
+        fallbacks=[]
+    )
+
 
     app = ApplicationBuilder().token(TOKEN).build()
     # Обробник запуска бота або команди /start
@@ -211,6 +227,8 @@ if __name__ == '__main__':
     app.add_handler(quiz_handler)
 
     app.add_handler(translate_handler)
+
+    app.add_handler(gift_handler)
 
     # Обробник кнопок під повідомленням random факту
     app.add_handler(CallbackQueryHandler(callback_handler))

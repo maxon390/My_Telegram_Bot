@@ -30,6 +30,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/translate" : "Перекладач",
         "/gift" : "Допомога в підборі подарунку"
     })
+    if update.callback_query is not None:
+        await update.callback_query.answer()
+    return ConversationHandler.END
 
 
 async def gpt(update:Update, context: ContextTypes.DEFAULT_TYPE):
@@ -37,6 +40,7 @@ async def gpt(update:Update, context: ContextTypes.DEFAULT_TYPE):
     gpt_service.set_prompt(load_prompt('gpt')) #Завантаження промту з файлу
     await send_image(update,context, 'gpt') #Відправка в чат картинки режиму gpt
     await send_text(update,context, load_message('gpt')) #Відправка тексту режиму, завантаженого з файлу
+
 
 #Функція обробки будь яких повідомлень від користувача з усіх режимів
 async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
@@ -101,6 +105,8 @@ async  def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await random(update, context)
     elif query.data == 'start': #якщо прийшло start то запускаємо функцію start
         await start(update, context)
+
+
     elif query.data == 'more_quiz': #якщо прийшло more_quiz то запускаємо функцію quiz_button_handler
         await quiz_button_handler(update, context)
     #elif query.data == 'change_language':
@@ -172,10 +178,63 @@ async def translate_button_handler(update: Update, context: ContextTypes.DEFAULT
     return ConversationHandler.END
 
 async def gift(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    await send_text_buttons(update, context,
+        "В цьому розділі АІ допоможе вам підібрати подарунок після того як ви дасте відповідь на декілька питань. Ви готові?",
+        {'gift_start': "Почати підбір подарунку",
+         'start': "Повернутись до головного меню"})
+    return GIFT
+
+async def gift_start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await send_text(update, context, "Для кого ви шукаєте подарунок?")
+    context.user_data['gift_answers'] = []
+    return GIFT  # тепер чекаємо текст
 
 async def gift_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    user_message = update.message.text
+    answers = context.user_data['gift_answers']
+
+    context.user_data['gift_answers'] = answers
+
+    if len(answers) == 0:
+        answers.append(f"Подарунок для: {user_message}")
+        await send_text(update, context, "Ціль подарунку? (День народження, просто так і тд.)")
+        return GIFT
+    elif len(answers) == 1:
+        answers.append(f"Ціль подарунку: {user_message}")
+        await send_text(update, context, "Скільки років цій людини?")
+        return GIFT
+    elif len(answers) == 2:
+        answers.append(f"Вік людини: {user_message}")
+        await send_text(update, context, "Які інтереси у цієї людини?")
+        return GIFT
+    elif len(answers) == 3:
+        answers.append(f"Інтереси людини: {user_message}")
+        await send_text(update, context, "Який бюджет подарунку? (грн)")
+        return GIFT
+    else:
+        answers.append(f"Бюджет подарунку (грн): {user_message}")
+        print(answers)
+        suggestion = await gpt_service.add_message(f"Підбери подарунок для людини з такими параметрами: {answers}")
+        await send_text_buttons(update, context, suggestion, {
+            'start': "Повернутись до головного меню",
+            'gift_more': "Не сподобалось, покажи інші варіанти"
+        })
+        return GIFT
+
+async def gift_more_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    # Формуємо новий запит до GPT, щоб запропонувати інші варіанти
+    answers = context.user_data.get('gift_answers', [])
+    suggestion = await gpt_service.add_message(f"Запропонуй інші ідеї подарунків для людини з такими параметрами: {answers}")
+    await query.edit_message_text(suggestion)
+    await send_text_buttons(update, context, "Вам подобається цей варіант?", {
+        'start': "Повернутись до головного меню",
+        'gift_more': "Не сподобалось, ще варіанти"
+    })
+    return GIFT
 
 if __name__ == '__main__':
     talk_handler = ConversationHandler(
@@ -207,13 +266,17 @@ if __name__ == '__main__':
     )
 
     gift_handler = ConversationHandler(
-        entry_points=[CommandHandler(gift, 'gift')],
+        entry_points=[CommandHandler('gift', gift)],
         states={
-            GIFT : [MessageHandler(filters.TEXT & ~filters.COMMAND, gift_handler)]
+            GIFT: [
+                CallbackQueryHandler(gift_start_handler, pattern='gift_start'),
+                CallbackQueryHandler(gift_more_handler, pattern='gift_more'),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, gift_handler),
+                CallbackQueryHandler(start, pattern='start')
+            ]
         },
-        fallbacks=[]
+        fallbacks=[CommandHandler("start", start)]
     )
-
 
     app = ApplicationBuilder().token(TOKEN).build()
     # Обробник запуска бота або команди /start

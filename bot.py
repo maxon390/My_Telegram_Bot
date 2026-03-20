@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, \
     CallbackQueryHandler, ConversationHandler
 from gpt import ChatGptService
-from util import show_main_menu,send_text, send_image, load_message, send_text_buttons, load_prompt
+from util import show_main_menu, send_text, send_image, load_message, send_text_buttons, load_prompt
 from data import translate_button, date_buttons, quiz_prompts, quiz_buttons
 
 TALK = 1
@@ -16,46 +16,52 @@ load_dotenv()  # Тягне ваш ключ із .env
 
 TOKEN = os.getenv("BOT_TOKEN")
 
-OPENAI_TOKEN = os.getenv("OPENAI_API_KEY") #завантажуємо токен chat GPT
-gpt_service = ChatGptService(OPENAI_TOKEN) #створюємо обєкт chat GPT
+OPENAI_TOKEN = os.getenv("OPENAI_API_KEY")  # завантажуємо токен chat GPT
+gpt_service = ChatGptService(OPENAI_TOKEN)  # створюємо обєкт chat GPT
 
-#Стартове меню при запуску бота або при команді /start
+
+# Стартове меню при запуску бота або при команді /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_text(update, context, load_message('main'))
-    #Додавання випадючого меню зліва
-    await show_main_menu(update, context,{
+    # Додавання випадючого меню зліва
+    await show_main_menu(update, context, {
         "/start": "Головне меню",
         "/random": "Цікавий рандомний факт",
-        "/gpt" : "Запитання чату GPT",
-        "/translate" : "Перекладач",
-        "/gift" : "Допомога в підборі подарунку"
+        "/gpt": "Запитання чату GPT",
+        "/translate": "Перекладач",
+        "/gift": "Допомога в підборі подарунку"
     })
     if update.callback_query is not None:
         await update.callback_query.answer()
     return ConversationHandler.END
 
 
-async def gpt(update:Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['mode'] = 'gpt' #Перехід моду в режим gpt
-    gpt_service.set_prompt(load_prompt('gpt')) #Завантаження промту з файлу
-    await send_image(update,context, 'gpt') #Відправка в чат картинки режиму gpt
-    await send_text(update,context, load_message('gpt')) #Відправка тексту режиму, завантаженого з файлу
+async def gpt(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['mode'] = 'gpt'  # Перехід моду в режим gpt
+    gpt_service.set_prompt(load_prompt('gpt'))  # Завантаження промту з файлу
+    await send_image(update, context, 'gpt')  # Відправка в чат картинки режиму gpt
+    await send_text(update, context, load_message('gpt'))  # Відправка тексту режиму, завантаженого з файлу
 
 
-#Функція обробки будь яких повідомлень від користувача з усіх режимів
-async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data['mode'] == 'talk': # цей блок виконується якщо режим talk
-        user_message = update.message.text #отримуємо текст повідомлення від користувача
-        message = await update.message.reply_text("Набирає повідомлення...")  #відправляємо користувачу повідомлення за записуємо його адресу
-        gpt_answer = await gpt_service.add_message(user_message)  #відправляємо чату повідомлення користувача та записуємо відповідь
-        await message.edit_text(gpt_answer)  #змінюємо попередне повідомлення користувачу на відповідь від чату
-        await send_text_buttons(update,context, '__________', {'start' : 'Завершити діалог'})#Додає кнопку завершити діалог
-    elif context.user_data.get('mode') == 'gpt': # цей блок виконується якщо режим gpt
-        user_message = update.message.text  #отримуємо текст повідомлення від користувача
-        message = await update.message.reply_text("Бот думає..") #відправляємо користувачу повідомлення за записуємо його адресу
-        gpt_answer = await gpt_service.add_message(user_message) #відправляємо чату повідомлення користувача та записуємо відповідь
-        await message.edit_text(gpt_answer)  #змінюємо попередне повідомлення користувачу на відповідь від чату
-    elif context.user_data.get('mode') == 'quiz': # цей блок виконується якщо режим quiz
+# Функція обробки будь яких повідомлень від користувача з усіх режимів
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data['mode'] == 'talk':  # цей блок виконується якщо режим talk
+        user_message = update.message.text  # отримуємо текст повідомлення від користувача
+        message = await update.message.reply_text(
+            "Набирає повідомлення...")  # відправляємо користувачу повідомлення за записуємо його адресу
+        gpt_answer = await gpt_service.add_message(
+            user_message)  # відправляємо чату повідомлення користувача та записуємо відповідь
+        await message.edit_text(gpt_answer)  # змінюємо попередне повідомлення користувачу на відповідь від чату
+        await send_text_buttons(update, context, '__________',
+                                {'start': 'Завершити діалог'})  # Додає кнопку завершити діалог
+    elif context.user_data.get('mode') == 'gpt':  # цей блок виконується якщо режим gpt
+        user_message = update.message.text  # отримуємо текст повідомлення від користувача
+        message = await update.message.reply_text(
+            "Бот думає..")  # відправляємо користувачу повідомлення за записуємо його адресу
+        gpt_answer = await gpt_service.add_message(
+            user_message)  # відправляємо чату повідомлення користувача та записуємо відповідь
+        await message.edit_text(gpt_answer)  # змінюємо попередне повідомлення користувачу на відповідь від чату
+    elif context.user_data.get('mode') == 'quiz':  # цей блок виконується якщо режим quiz
         user_answer = update.message.text
         message = await update.message.reply_text("Перевіряю...")
         check_query = f"Користувач відповів: '{user_answer}'. Якщо правильно - почни з 'Правильно!', якщо ні - 'Неправильно'. Додай пояснення."
@@ -77,71 +83,77 @@ async def handle_message(update:Update, context: ContextTypes.DEFAULT_TYPE):
         text = await gpt_service.add_message(user_answer)
         await message.edit_text(text)
         await send_text_buttons(update, context,
-        'Напишіть що ще хочете перекласти, або оберіть іншу мову',
-        {
-            'change_language' : 'Змінити мову',
-            'start' : 'Головне меню'
-        })
+                                'Напишіть що ще хочете перекласти, або оберіть іншу мову',
+                                {
+                                    'change_language': 'Змінити мову',
+                                    'start': 'Головне меню'
+                                })
 
 
 # Функція виводу рандом факту який генерує чат ГПТ
 async def random(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data.get('mode') != 'random': #Якщо режим  не рандом
-        context.user_data['mode'] = 'random' # тоді перевести в режим рандом
-        await send_image(update, context, 'random') #також завантажити картинку розділу якщо до цього був інший режим
+    if context.user_data.get('mode') != 'random':  # Якщо режим  не рандом
+        context.user_data['mode'] = 'random'  # тоді перевести в режим рандом
+        await send_image(update, context, 'random')  # також завантажити картинку розділу якщо до цього був інший режим
     prompt = load_prompt('random')
     gpt_answer = await gpt_service.send_question(prompt, "Напиши цікавий, рандомний факт. Українською")
-    #Виводить текст факту та додає кнопки Ще цікавий факт та Завершити
+    # Виводить текст факту та додає кнопки Ще цікавий факт та Завершити
     await send_text_buttons(update, context, gpt_answer, {
-        'random' : "Ще цікавий факт", #При натисканні спрацьовує обробник app.add_handler(CallbackQueryHandler(callback_handler))
-        'start' : 'Завершити'}) #При натисканні спрацьовує обробник app.add_handler(CallbackQueryHandler(callback_handler))
+        'random': "Ще цікавий факт",
+        # При натисканні спрацьовує обробник app.add_handler(CallbackQueryHandler(callback_handler))
+        'start': 'Завершити'})  # При натисканні спрацьовує обробник app.add_handler(CallbackQueryHandler(callback_handler))
 
 
 # Функція обробки кнопок під повідомленням з random фактом та квізом
-async  def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query #отримуємо назву кнопки яка була натиснута
-    await query.answer() #даємо відповідь що обробили натискання кнопки
-    if query.data == 'random': #якщо прийшло random то запускаємо функцію random
+async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query  # отримуємо назву кнопки яка була натиснута
+    await query.answer()  # даємо відповідь що обробили натискання кнопки
+    if query.data == 'random':  # якщо прийшло random то запускаємо функцію random
         await random(update, context)
-    elif query.data == 'start': #якщо прийшло start то запускаємо функцію start
+    elif query.data == 'start':  # якщо прийшло start то запускаємо функцію start
         await start(update, context)
 
 
-    elif query.data == 'more_quiz': #якщо прийшло more_quiz то запускаємо функцію quiz_button_handler
+    elif query.data == 'more_quiz':  # якщо прийшло more_quiz то запускаємо функцію quiz_button_handler
         await quiz_button_handler(update, context)
-    #elif query.data == 'change_language':
-       # await translate(update, context)
+    # elif query.data == 'change_language':
+    # await translate(update, context)
 
 
-async def talk(update:Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['mode'] = 'talk' #переводимо mode в talk
-    await send_image(update, context, 'date') #надсилає зображення режиму в чат
+async def talk(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['mode'] = 'talk'  # переводимо mode в talk
+    await send_image(update, context, 'date')  # надсилає зображення режиму в чат
 
-    await send_text_buttons(update, context, load_message('date'), date_buttons) # надсилає в чат опис режиму та кнопки
-    return TALK #Повертаємо state в talk_handler = ConversationHandler
+    await send_text_buttons(update, context, load_message('date'), date_buttons)  # надсилає в чат опис режиму та кнопки
+    return TALK  # Повертаємо state в talk_handler = ConversationHandler
+
 
 #  Функція обробки кнопок вибору знаменитості
 async def talk_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query #Отримуємо яка кнопка була натиснута
-    #print( query)
-    await query.answer() #даємо відповідь що обробили натискання кнопки
-    gpt_service.set_prompt(load_prompt(query.data)) #Завантажуємо промт знаметиності в чатГПТ
-    #await query.edit_message_text(f"Ви обрали особистість. Тепер я спілкуюся як {query.data[5:].capitalize()}!")
-    #Надсилаємо повідомлення в чат та кнопку завершити діалог
-    await send_text_buttons(update, context, f"Ви обрали особистість. Тепер я спілкуюся як {query.data[5:].capitalize()}!", {'start': 'Завершити'})
+    query = update.callback_query  # Отримуємо яка кнопка була натиснута
+    # print( query)
+    await query.answer()  # даємо відповідь що обробили натискання кнопки
+    gpt_service.set_prompt(load_prompt(query.data))  # Завантажуємо промт знаметиності в чатГПТ
+    # await query.edit_message_text(f"Ви обрали особистість. Тепер я спілкуюся як {query.data[5:].capitalize()}!")
+    # Надсилаємо повідомлення в чат та кнопку завершити діалог
+    await send_text_buttons(update, context,
+                            f"Ви обрали особистість. Тепер я спілкуюся як {query.data[5:].capitalize()}!",
+                            {'start': 'Завершити'})
     # виходимо з talk_handler = ConversationHandler, подальшою обробкою повідомлень займеться функція handle_message
     return ConversationHandler.END
 
+
 async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data['mode'] = 'quiz' # переводимо мод в режим quiz
+    context.user_data['mode'] = 'quiz'  # переводимо мод в режим quiz
     context.user_data['score'] = 0  # Початковий рахунок
-    await send_image(update, context, 'quiz') #надсилаємо картинку розділу в чат
+    await send_image(update, context, 'quiz')  # надсилаємо картинку розділу в чат
 
-    await send_text_buttons(update, context, load_message('quiz'), quiz_buttons) #надсилаємо в чат текст розділу та кнопки з темами квізу
-    return QUIZ #Повертаємо state в quiz_handler = ConversationHandler
+    await send_text_buttons(update, context, load_message('quiz'),
+                            quiz_buttons)  # надсилаємо в чат текст розділу та кнопки з темами квізу
+    return QUIZ  # Повертаємо state в quiz_handler = ConversationHandler
 
-async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE):
 
+async def quiz_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == 'start':
@@ -162,6 +174,7 @@ async def quiz_button_handler(update:Update, context: ContextTypes.DEFAULT_TYPE)
     await query.edit_message_text(question)
     return ConversationHandler.END
 
+
 async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['mode'] = 'translate'
     if update.callback_query is not None:
@@ -169,20 +182,24 @@ async def translate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_text_buttons(update, context, 'Виберіть мову на яку потрібно перекласти текст:', translate_button)
     return TRANSLATE
 
+
 async def translate_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await send_text(update, context, f"Напишіть текст який потрібно перекласти")
-    gpt_service.set_prompt(f'Переклади текст на {translate_button[query.data][:-1]+'у'}, без будь яких пояснень просто переклад, якщо ти не можеш перекласти - напиши українською "Я не можу це перекласти."')
-    #print(translate_button[query.data][:-1]+'у')
+    gpt_service.set_prompt(
+        f'Переклади текст на {translate_button[query.data][:-1] + 'у'}, без будь яких пояснень просто переклад, якщо ти не можеш перекласти - напиши українською "Я не можу це перекласти."')
+    # print(translate_button[query.data][:-1]+'у')
     return ConversationHandler.END
+
 
 async def gift(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_text_buttons(update, context,
-        "В цьому розділі АІ допоможе вам підібрати подарунок після того як ви дасте відповідь на декілька питань. Ви готові?",
-        {'gift_start': "Почати підбір подарунку",
-         'start': "Повернутись до головного меню"})
+                            "В цьому розділі АІ допоможе вам підібрати подарунок після того як ви дасте відповідь на декілька питань. Ви готові?",
+                            {'gift_start': "Почати підбір подарунку",
+                             'start': "Повернутись до головного меню"})
     return GIFT
+
 
 async def gift_start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -190,6 +207,7 @@ async def gift_start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await send_text(update, context, "Для кого ви шукаєте подарунок?")
     context.user_data['gift_answers'] = []
     return GIFT  # тепер чекаємо текст
+
 
 async def gift_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
@@ -223,12 +241,14 @@ async def gift_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         })
         return GIFT
 
+
 async def gift_more_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     # Формуємо новий запит до GPT, щоб запропонувати інші варіанти
     answers = context.user_data.get('gift_answers', [])
-    suggestion = await gpt_service.add_message(f"Запропонуй інші ідеї подарунків для людини з такими параметрами: {answers}")
+    suggestion = await gpt_service.add_message(
+        f"Запропонуй інші ідеї подарунків для людини з такими параметрами: {answers}")
     await query.edit_message_text(suggestion)
     await send_text_buttons(update, context, "Вам подобається цей варіант?", {
         'start': "Повернутись до головного меню",
@@ -236,29 +256,31 @@ async def gift_more_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     })
     return GIFT
 
+
 if __name__ == '__main__':
     talk_handler = ConversationHandler(
-        entry_points=[CommandHandler("talk", talk)], #викликає функцію talk
+        entry_points=[CommandHandler("talk", talk)],  # викликає функцію talk
         states={
-            TALK: [CallbackQueryHandler(talk_button_handler)] #викликає функцію обробки кнопок talk_button_handler
+            TALK: [CallbackQueryHandler(talk_button_handler)]  # викликає функцію обробки кнопок talk_button_handler
         },
         fallbacks=[CommandHandler("start", start)],
     )
 
     quiz_handler = ConversationHandler(
-        entry_points=[CommandHandler("quiz", quiz), #Запускає функцію quiz по команді /quiz
-                      CallbackQueryHandler(quiz, pattern='quiz') #Запускає функцію quiz по по натисканню кнопки з query = quiz
+        entry_points=[CommandHandler("quiz", quiz),  # Запускає функцію quiz по команді /quiz
+                      CallbackQueryHandler(quiz, pattern='quiz')
+                      # Запускає функцію quiz по по натисканню кнопки з query = quiz
                       ],
         states={
-            QUIZ: [CallbackQueryHandler(quiz_button_handler)]#Запускає функцію обробки кнопок вибору теми квізу
+            QUIZ: [CallbackQueryHandler(quiz_button_handler)]  # Запускає функцію обробки кнопок вибору теми квізу
         },
         fallbacks=[]
     )
 
     translate_handler = ConversationHandler(
-            entry_points=[CommandHandler("translate", translate),
-                        CallbackQueryHandler(translate, pattern='change_language')
-                          ],
+        entry_points=[CommandHandler("translate", translate),
+                      CallbackQueryHandler(translate, pattern='change_language')
+                      ],
         states={
             TRANSLATE: [CallbackQueryHandler(translate_button_handler)],
         },
@@ -296,7 +318,7 @@ if __name__ == '__main__':
     # Обробник кнопок під повідомленням random факту
     app.add_handler(CallbackQueryHandler(callback_handler))
     # Обробник команди /gpt
-    app.add_handler((CommandHandler('gpt', gpt))) #Викликає функцію gpt
+    app.add_handler((CommandHandler('gpt', gpt)))  # Викликає функцію gpt
     # Обробник будь-яких текстових повідомлень
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
